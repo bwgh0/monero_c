@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: MoneroOne <devs@monero.one>
+Date: Mon, 5 May 2026 00:00:00 -0500
+Subject: [PATCH 22/22] HIDAPI_DUMMY trumps host hidapi during cross-compile
+
+When cross-compiling for iOS, find_package(HIDAPI) may pick up the
+host's homebrew-installed hidapi and set HIDAPI_FOUND/HAVE_HIDAPI.
+Those headers live at /opt/homebrew/include/hidapi which is NOT on
+the iOS sysroot include path, so when device_io_hid.hpp's
+`#if defined(HAVE_HIDAPI)` block tries to pull in <hidapi/hidapi.h>
+the iOS compile aborts with "fatal error: 'hidapi/hidapi.h' file
+not found".
+
+HIDAPI_DUMMY mode exists precisely so device_ledger / device_io_hid
+can be compiled without a real hidapi present (the host app supplies
+the byte-swap shim instead). Skip the host hidapi pickup entirely
+when DUMMY is set so HAVE_HIDAPI never gets defined.
+---
+ CMakeLists.txt | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0000000..0000000 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -699,12 +699,17 @@ if (HIDAPI_DUMMY)
+ endif()
+
+ # Final setup for hid
+-if (HIDAPI_FOUND)
++# HIDAPI_DUMMY trumps HIDAPI_FOUND — when cross-compiling for iOS,
++# find_package may pick up a host (homebrew) hidapi whose headers are
++# not on the iOS sysroot. Defining HAVE_HIDAPI in that state pulls
++# <hidapi/hidapi.h> into the iOS compile and fails. Skip the host
++# hidapi entirely when DUMMY is set.
++if (HIDAPI_FOUND AND NOT HIDAPI_DUMMY)
+   message(STATUS "Using HIDAPI include dir at ${HIDAPI_INCLUDE_DIR}")
+   add_definitions(-DHAVE_HIDAPI)
+   include_directories(${HIDAPI_INCLUDE_DIR})
+   link_directories(${LIBHIDAPI_LIBRARY_DIRS})
+ else()
+-  message(STATUS "Could not find HIDAPI")
++  message(STATUS "HIDAPI not used (DUMMY=${HIDAPI_DUMMY}, FOUND=${HIDAPI_FOUND})")
+ endif()
+
+ # Trezor support check
+--
+2.0.0

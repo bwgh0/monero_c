@@ -233,12 +233,14 @@ pushd $repo/contrib/depends
             echo "===================================="
             pwd
             pushd ../../../external/ios
+                echo ">>> Checking iOS dependencies..."
                 ./install_missing_headers.sh
-                ./build_openssl.sh
-                ./build_boost.sh
-                ./build_sodium.sh
-                ./build_zmq.sh
-                ./build_unbound.sh
+                if [ ! -f build/ios/lib/libssl.a ]; then ./build_openssl.sh; else echo "  OpenSSL: cached"; fi
+                if [ ! -d build/ios/include/boost ]; then ./build_boost.sh; else echo "  Boost: cached"; fi
+                if [ ! -f build/ios/lib/libsodium.a ]; then ./build_sodium.sh; else echo "  Sodium: cached"; fi
+                if [ ! -f build/ios/lib/libzmq.a ]; then ./build_zmq.sh; else echo "  ZMQ: cached"; fi
+                if [ ! -f build/ios/lib/libunbound.a ]; then ./build_unbound.sh; else echo "  Unbound: cached"; fi
+                if [ ! -f build/ios/lib/libprotobuf.a ]; then ./build_protobuf.sh; else echo "  Protobuf: cached"; fi
                 if [[ "$repo" == "wownero" ]];
                 then
                     ./build_wownero_seed.sh
@@ -284,6 +286,7 @@ pushd $repo/contrib/depends
             verbose_copy "${IOS_PREFIX}/lib/libssl.a" ${IOS_LIBS_DIR}/lib/libssl.a
             verbose_copy "${IOS_PREFIX}/lib/libcrypto.a" ${IOS_LIBS_DIR}/lib/libcrypto.a
             verbose_copy "${IOS_PREFIX}/lib/libsodium.a" ${IOS_LIBS_DIR}/lib/libsodium.a
+            verbose_copy "${IOS_PREFIX}/lib/libprotobuf.a" ${IOS_LIBS_DIR}/lib/libprotobuf.a
             if [[ "$repo" == "wownero" ]];
             then
                 verbose_copy "${WOWNEROSEED_DIR}/libwownero-seed.a" ${IOS_LIBS_DIR}/lib/libwownero-seed.a
@@ -351,12 +354,11 @@ pushd $repo/build/${HOST_ABI}
         ;;
         "host-apple-ios")
             PREFIX="$(realpath "${PWD}/../../../external/ios/build/ios")"
-            # echo $PREFIX
-            # exit 1
+            NATIVE_PREFIX="${PREFIX}/native"
             env \
                 CMAKE_INCLUDE_PATH="${PREFIX}/include" \
                 CMAKE_LIBRARY_PATH="${PREFIX}/lib" \
-                CC="${IOS_CC}" CXX="${IOS_CXX}" cmake -DHIDAPI_DUMMY=ON -D IOS=ON -D ARCH=arm64 -D CMAKE_BUILD_DYPE=$buildType -D STATIC=ON -D BUILD_GUI_DEPS=1 -D UNBOUND_INCLUDE_DIR="${PREFIX}/lib" ../..
+                CC="${IOS_CC}" CXX="${IOS_CXX}" cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DHIDAPI_DUMMY=ON -D IOS=ON -D ARCH=arm64 -D CMAKE_BUILD_DYPE=$buildType -D STATIC=ON -D BUILD_GUI_DEPS=1 -D UNBOUND_INCLUDE_DIR="${PREFIX}/lib" -D USE_DEVICE_TREZOR=ON -D USE_DEVICE_TREZOR_LIBUSB=OFF -D Protobuf_PROTOC_EXECUTABLE="${NATIVE_PREFIX}/bin/protoc" -D Protobuf_LIBRARY="${PREFIX}/lib/libprotobuf.a" -D Protobuf_INCLUDE_DIR="${PREFIX}/include" ../..
         ;;
         *)
             echo "we don't know how to compile monero for '$HOST_ABI'"

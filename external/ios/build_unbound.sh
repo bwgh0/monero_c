@@ -11,6 +11,13 @@ UNBOUND_GIT_URL="https://github.com/NLnetLabs/unbound.git"
 UNBOUND_DIR_PATH="${EXTERNAL_IOS_SOURCE_DIR}/unbound-1.16.2"
 
 echo "============================ Unbound ============================"
+
+# Skip if already built
+if [ -f "${EXTERNAL_IOS_DIR}/lib/libunbound.a" ]; then
+    echo "Unbound already built, skipping."
+    exit 0
+fi
+
 rm -rf ${UNBOUND_DIR_PATH}
 
 # Check if the directory already exists.
@@ -29,7 +36,7 @@ export IOS_SDK=iPhone
 export IOS_CPU=arm64
 export IOS_PREFIX=$EXTERNAL_IOS_DIR
 export AUTOTOOLS_HOST=aarch64-apple-ios
-export AUTOTOOLS_BUILD="$(./config.guess)"
+export AUTOTOOLS_BUILD="aarch64-apple-darwin$(uname -r)"
 source ./contrib/ios/setenv_ios.sh
 ./contrib/ios/install_tools.sh
 ./contrib/ios/install_expat.sh

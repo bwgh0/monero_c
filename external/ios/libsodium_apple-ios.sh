@@ -70,30 +70,12 @@ build_ios() {
   export PATH="${BASEDIR}/usr/bin:$BASEDIR/usr/sbin:$PATH"
   export SDK="${BASEDIR}/SDKs/iPhoneOS.sdk"
 
-  ## 32-bit iOS
-  export CFLAGS="-O2 -mthumb -arch armv7 -isysroot ${SDK} -mios-version-min=${IOS_VERSION_MIN}"
-  export LDFLAGS="-mthumb -arch armv7 -isysroot ${SDK} -mios-version-min=${IOS_VERSION_MIN}"
+  ## 64-bit iOS only (armv7/armv7s no longer supported by modern Xcode)
+  export CFLAGS="-O2 -arch arm64 -isysroot ${SDK} -mios-version-min=13.0"
+  export LDFLAGS="-arch arm64 -isysroot ${SDK} -mios-version-min=13.0"
 
   make distclean >/dev/null 2>&1
-  ./configure --host=arm-apple-darwin10 --prefix="$IOS32_PREFIX" \
-    ${LIBSODIUM_ENABLE_MINIMAL_FLAG} || exit 1
-  make -j${PROCESSORS} install || exit 1
-
-  ## 32-bit armv7s iOS
-  export CFLAGS="-O2 -mthumb -arch armv7s -isysroot ${SDK} -mios-version-min=${IOS_VERSION_MIN}"
-  export LDFLAGS="-mthumb -arch armv7s -isysroot ${SDK} -mios-version-min=${IOS_VERSION_MIN}"
-
-  make distclean >/dev/null 2>&1
-  ./configure --host=arm-apple-darwin10 --prefix="$IOS32s_PREFIX" \
-    ${LIBSODIUM_ENABLE_MINIMAL_FLAG} || exit 1
-  make -j${PROCESSORS} install || exit 1
-
-  ## 64-bit iOS
-  export CFLAGS="-O2 -arch arm64 -isysroot ${SDK} -mios-version-min=${IOS_VERSION_MIN}"
-  export LDFLAGS="-arch arm64 -isysroot ${SDK} -mios-version-min=${IOS_VERSION_MIN}"
-
-  make distclean >/dev/null 2>&1
-  ./configure --host=arm-apple-darwin10 --prefix="$IOS64_PREFIX" \
+  ./configure --host=aarch64-apple-darwin --prefix="$IOS64_PREFIX" \
     ${LIBSODIUM_ENABLE_MINIMAL_FLAG} || exit 1
   make -j${PROCESSORS} install || exit 1
 }
@@ -116,11 +98,8 @@ echo "Bundling iOS targets..."
 mkdir -p "${PREFIX}/ios/lib"
 cp -a "${IOS64_PREFIX}/include" "${PREFIX}/ios/"
 for ext in a dylib; do
-  lipo -create \
-    "$IOS32_PREFIX/lib/libsodium.${ext}" \
-    "$IOS32s_PREFIX/lib/libsodium.${ext}" \
-    "$IOS64_PREFIX/lib/libsodium.${ext}" \
-    -output "$PREFIX/ios/lib/libsodium.${ext}"
+  # Only arm64 since armv7/armv7s are no longer supported
+  cp "${IOS64_PREFIX}/lib/libsodium.${ext}" "$PREFIX/ios/lib/libsodium.${ext}" 2>/dev/null || true
 done
 
 echo "Creating Clibsodium.xcframework..."

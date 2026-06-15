@@ -9,6 +9,12 @@ SODIUM_URL="https://github.com/jedisct1/libsodium.git"
 
 echo "============================ SODIUM ============================"
 
+# Skip if already built
+if [ -f "${EXTERNAL_IOS_LIB_DIR}/libsodium.a" ]; then
+    echo "Sodium already built, skipping."
+    exit 0
+fi
+
 echo "Cloning SODIUM from - $SODIUM_URL"
 
 # Check if the directory already exists.

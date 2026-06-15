@@ -8,6 +8,12 @@ OPEN_SSL_DIR_PATH="${EXTERNAL_IOS_SOURCE_DIR}/OpenSSL"
 
 echo "============================ OpenSSL ============================"
 
+# Skip if already built
+if [ -f "${EXTERNAL_IOS_LIB_DIR}/libcrypto.a" ] && [ -f "${EXTERNAL_IOS_LIB_DIR}/libssl.a" ]; then
+    echo "OpenSSL already built, skipping."
+    exit 0
+fi
+
 echo "Cloning Open SSL from - $OPEN_SSL_URL"
 
 # Check if the directory already exists.

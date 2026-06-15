@@ -311,6 +311,19 @@ set_target_properties(hidapi PROPERTIES IMPORTED_LOCATION
     ${EXTERNAL_LIBS_DIR}/lib/libhidapi.a)
 
 #############
+# Protobuf (for Trezor support)
+#############
+
+if(EXISTS ${EXTERNAL_LIBS_DIR}/lib/libprotobuf.a)
+    add_library(protobuf STATIC IMPORTED)
+    set_target_properties(protobuf PROPERTIES IMPORTED_LOCATION
+        ${EXTERNAL_LIBS_DIR}/lib/libprotobuf.a)
+    set(EXTRA_LIBS_PROTOBUF protobuf)
+else()
+    set(EXTRA_LIBS_PROTOBUF "")
+endif()
+
+#############
 # System
 #############
 
@@ -434,6 +447,8 @@ target_link_libraries(  wallet2_api_c
                         crypto
 
                         sodium
+
+                        ${EXTRA_LIBS_PROTOBUF}
 
                         ${EXTRA_LIBS_WINDOWS}
                         ${EXTRA_LIBS_APPLE}
